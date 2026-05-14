@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P21 Issue Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0d1b2a 0%, #1b2d45 50%, #162032 100%);
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: #e0e6ed;
+    padding: 40px 20px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 48px; }
+  .logo-row { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .logo-badge {
+    width: 48px; height: 48px; border-radius: 13px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.5px;
+  }
+  .header h1 {
+    font-size: 34px; font-weight: 700;
+    background: linear-gradient(90deg, #f8fafc, #94a3b8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header p { color: #7a8ba3; font-size: 15px; max-width: 600px; margin: 0 auto; line-height: 1.65; }
+
+  /* Upload Zones */
+  .upload-zone {
+    border: 2px dashed #2d3f56; border-radius: 18px;
+    padding: 52px 32px; text-align: center; cursor: pointer;
+    transition: all 0.25s ease; background: rgba(255,255,255,0.015);
+    margin-bottom: 16px; position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: #f59e0b; background: rgba(245,158,11,0.05);
+  }
+  .upload-zone .icon { font-size: 46px; margin-bottom: 14px; opacity: 0.55; }
+  .upload-zone .label { font-size: 17px; font-weight: 600; color: #c8d3df; margin-bottom: 6px; }
+  .upload-zone .hint { font-size: 13px; color: #5e7083; }
+  .upload-zone input { display: none; }
+
+  /* DS Upload Zone — smaller, secondary */
+  .upload-zone.ds-zone {
+    padding: 30px 32px;
+    border-color: #253347;
+    background: rgba(16,185,129,0.02);
+    margin-bottom: 32px;
+  }
+  .upload-zone.ds-zone:hover, .upload-zone.ds-zone.drag-over {
+    border-color: #10b981; background: rgba(16,185,129,0.06);
+  }
+  .upload-zone.ds-zone .icon { font-size: 32px; margin-bottom: 10px; }
+  .upload-zone.ds-zone .label { font-size: 15px; color: #93c5b8; }
+  .upload-zone.ds-zone .hint { font-size: 12px; color: #4d7a6b; }
+
+  /* DS Status Badge */
+  .ds-status {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .ds-status.loaded {
+    background: rgba(16,185,129,0.12); color: #34d399;
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+  .ds-status .check { font-size: 16px; }
+  .ds-status .subj-count { font-family: 'JetBrains Mono', monospace; }
+
+  /* Filter Bar */
+  .filter-bar {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px; padding: 18px 24px;
+    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.18);
+    border-radius: 14px; flex-wrap: wrap;
+  }
+  .filter-bar .filter-label {
+    font-size: 13px; font-weight: 600; color: #10b981;
+    text-transform: uppercase; letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .filter-bar select {
+    flex: 1; min-width: 200px;
+    background: #1a2744; color: #e0e6ed;
+    border: 1px solid #2d3f56; border-radius: 8px;
+    padding: 10px 14px; font-family: inherit; font-size: 14px;
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8ba3' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  .filter-bar select:focus { outline: none; border-color: #10b981; }
+  .filter-bar .filter-info {
+    font-size: 12px; color: #5e7083; width: 100%;
+    margin-top: 4px; font-style: italic;
+  }
+  .filter-bar .active-filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: #34d399; font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Remove DS button */
+  .ds-remove-btn {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px; padding: 6px 14px; color: #f87171;
+    cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .ds-remove-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); }
+
+  /* Exclusion Bar */
+  .exclusion-bar {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px; padding: 18px 24px;
+    background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.18);
+    border-radius: 14px; flex-wrap: wrap;
+  }
+  .exclusion-bar .exclusion-label {
+    font-size: 13px; font-weight: 600; color: #f59e0b;
+    text-transform: uppercase; letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .exclusion-bar input {
+    flex: 1; min-width: 200px;
+    background: #1a2744; color: #e0e6ed;
+    border: 1px solid #2d3f56; border-radius: 8px;
+    padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  }
+  .exclusion-bar input:focus { outline: none; border-color: #f59e0b; }
+  .exclusion-bar input::placeholder { color: #4a5d75; font-family: 'DM Sans', sans-serif; font-size: 13px; }
+  .exclusion-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a1a; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .exclusion-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,0.25); }
+  .exclusion-bar .exclusion-info {
+    font-size: 12px; color: #5e7083; width: 100%;
+    margin-top: 2px; font-style: italic;
+  }
+  .exclusion-active {
+    width: 100%; margin-top: 6px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .exclusion-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 7px; padding: 5px 12px;
+    font-size: 12px; color: #fbbf24; max-width: 400px;
+  }
+  .exclusion-tag .tag-num {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  }
+  .exclusion-tag .tag-msg {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #c8d3df;
+  }
+  .exclusion-tag .tag-remove {
+    cursor: pointer; color: #f87171; font-weight: 700; font-size: 14px;
+    margin-left: 4px;
+  }
+  .exclusion-tag .tag-remove:hover { color: #ef4444; }
+  .exclusion-tag.pending {
+    border-style: dashed;
+    opacity: 0.7;
+  }
+  .exclusion-clear {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 7px; padding: 5px 14px; color: #f87171;
+    cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 500;
+  }
+  .exclusion-clear:hover { background: rgba(239,68,68,0.2); }
+  .regen-btn {
+    width: 100%; padding: 14px 24px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a1a; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; letter-spacing: 0.3px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .regen-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(245,158,11,0.3);
+  }
+  td.row-num {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    color: #fbbf24; text-align: center; white-space: nowrap;
+  }
+
+  /* Spinner */
+  .spinner-wrap { text-align: center; padding: 40px; }
+  .spinner {
+    display: inline-block; width: 34px; height: 34px;
+    border: 3px solid #2d3f56; border-top-color: #f59e0b;
+    border-radius: 50%; animation: spin 0.75s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-wrap p { color: #7a8ba3; margin-top: 14px; font-size: 15px; }
+
+  /* Error */
+  .error-box {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 12px; padding: 16px 22px; margin-bottom: 24px;
+  }
+  .error-box .title { color: #f87171; font-weight: 600; margin-bottom: 4px; }
+  .error-box .msg { color: #e57373; font-size: 14px; }
+
+  /* Summary Cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .card {
+    border-radius: 14px; padding: 22px 26px;
+  }
+  .card.dm { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+  .card.prog { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); }
+  .card.total { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+  .card .card-label {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.2px; margin-bottom: 8px;
+  }
+  .card.dm .card-label { color: #f59e0b; }
+  .card.prog .card-label { color: #3b82f6; }
+  .card.total .card-label { color: #7a8ba3; }
+  .card .card-num {
+    font-size: 32px; font-weight: 700; margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .card.dm .card-num { color: #fbbf24; }
+  .card.prog .card-num { color: #60a5fa; }
+  .card.total .card-num { color: #e0e6ed; }
+  .card .card-sub { font-size: 13px; color: #5e7083; }
+
+  /* Download Button */
+  .download-btn {
+    width: 100%; padding: 17px 24px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a1a; border: none; border-radius: 13px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    font-family: inherit; letter-spacing: 0.3px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-bottom: 36px;
+  }
+  .download-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(245,158,11,0.3);
+  }
+
+  /* Tables */
+  .table-section { margin-bottom: 30px; }
+  .table-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .table-section h3.dm-title { color: #fbbf24; }
+  .table-section h3.prog-title { color: #60a5fa; }
+  .table-wrap {
+    overflow-x: auto; border-radius: 11px;
+    border: 1px solid #2d3f56;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: #1a2744; }
+  th {
+    padding: 11px 13px; text-align: left; color: #94a3b8;
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.8px; white-space: nowrap;
+  }
+  td { padding: 9px 13px; border-bottom: 1px solid #1e2d42; }
+  td.msg { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+  td.ds { color: #7a8ba3; white-space: nowrap; }
+  td.cnt { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  td.cnt.dm-cnt { color: #fbbf24; }
+  td.cnt.prog-cnt { color: #60a5fa; }
+  td.imp { color: #7a8ba3; }
+  td.rat { color: #5e7083; font-size: 12px; }
+  .dm-row:nth-child(even) { background: rgba(245,158,11,0.025); }
+  .prog-row:nth-child(even) { background: rgba(59,130,246,0.025); }
+
+  /* Reset Button */
+  .reset-wrap { text-align: center; margin-top: 36px; }
+  .reset-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid #2d3f56;
+    border-radius: 10px; padding: 11px 32px; color: #7a8ba3;
+    cursor: pointer; font-size: 14px; font-family: inherit; font-weight: 500;
+    transition: border-color 0.2s;
+  }
+  .reset-btn:hover { border-color: #4a6282; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+    .header h1 { font-size: 26px; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-badge">P21</div>
+      <h1>Issue Classifier</h1>
+    </div>
+    <p>Upload your Pinnacle 21 validation report to automatically classify issues into DM Queries vs Non-DM items with a downloadable Excel output.</p>
+  </div>
+
+  <!-- P21 Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.tsv">
+    <div class="icon">📂</div>
+    <div class="label" id="uploadLabel">Drop your P21 report here or click to browse</div>
+    <div class="hint">Supports .xlsx, .xls, .csv, .tsv</div>
+  </div>
+
+  <!-- DS Upload Zone -->
+  <div class="upload-zone ds-zone" id="dsUploadZone">
+    <input type="file" id="dsFileInput" accept=".xpt,.csv">
+    <div class="icon">🔬</div>
+    <div class="label" id="dsUploadLabel">Optional: Upload SDTM DS dataset to filter by subject population</div>
+    <div class="hint">Supports .xpt, .csv — Used to identify Screen Failures and Discontinued/Completed subjects</div>
+  </div>
+
+  <!-- DS Status (shown after DS load) -->
+  <div class="hidden" id="dsStatusWrap" style="text-align:center; margin-bottom: 20px;">
+    <div class="ds-status loaded">
+      <span class="check">✓</span>
+      <span id="dsStatusText">DS loaded</span>
+    </div>
+    <div style="margin-top: 8px;">
+      <button class="ds-remove-btn" id="dsRemoveBtn">✕ Remove DS dataset</button>
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div class="spinner-wrap hidden" id="spinner">
+    <div class="spinner"></div>
+    <p id="spinnerMsg">Classifying issues…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box hidden" id="errorBox">
+    <div class="title">Error processing file</div>
+    <div class="msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="hidden" id="results">
+    <!-- Filter Bar (only shown when DS is loaded) -->
+    <div class="filter-bar hidden" id="filterBar">
+      <span class="filter-label">👥 Subject Filter</span>
+      <select id="filterSelect">
+        <option value="all">All Subjects (no filter)</option>
+        <option value="sf">Screen Failures Only</option>
+        <option value="dc">Discontinued/Completed Only</option>
+        <option value="sf_dc">Screen Failures + Discontinued/Completed</option>
+      </select>
+      <span class="active-filter-count" id="filterCount"></span>
+      <div class="filter-info" id="filterInfo"></div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="cards">
+      <div class="card dm">
+        <div class="card-label">DM Query Issues</div>
+        <div class="card-num" id="dmCount">0</div>
+        <div class="card-sub" id="dmTypes">0 unique types</div>
+      </div>
+      <div class="card prog">
+        <div class="card-label">Non-DM Issues</div>
+        <div class="card-num" id="progCount">0</div>
+        <div class="card-sub" id="progTypes">0 unique types</div>
+      </div>
+      <div class="card total">
+        <div class="card-label">Total Records</div>
+        <div class="card-num" id="totalCount">0</div>
+        <div class="card-sub" id="detailCount">0 subject-level DM rows</div>
+      </div>
+    </div>
+
+    <!-- Download -->
+    <button class="download-btn" id="downloadBtn">⬇ Export Report</button>
+
+    <!-- DM Table -->
+    <div class="table-section">
+      <h3 class="dm-title">DM Query Issues</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Message</th><th>Datasets</th><th>Count</th><th>Impact</th><th>Rationale</th></tr></thead>
+          <tbody id="dmTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Exclusion Bar -->
+    <div class="exclusion-bar" id="exclusionBar">
+      <span class="exclusion-label">🔀 Move to Non-DM</span>
+      <input type="text" id="exclusionInput" placeholder="Enter # to move, separated by / (e.g. 2/5/8)" />
+      <button class="exclusion-btn" id="exclusionBtn">Apply</button>
+      <div class="exclusion-info">Enter the # of any DM Query messages that are not expected to be queried by DM due to your study design. They will be moved to the Non-DM Issues tab.</div>
+      <div class="exclusion-active hidden" id="exclusionActive"></div>
+      <div class="hidden" id="regenWrap" style="width:100%; margin-top: 10px;">
+        <button class="regen-btn" id="regenBtn">⟳ Re-generate / Re-export Report</button>
+      </div>
+    </div>
+
+    <!-- Prog Table -->
+    <div class="table-section">
+      <h3 class="prog-title">Non-DM Issues (Top 10)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Message</th><th>Datasets</th><th>Count</th><th>Impact</th><th>Rationale</th></tr></thead>
+          <tbody id="progTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <div class="reset-wrap">
+      <button class="reset-btn" id="resetBtn">Upload another report</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// XPT (SAS V5 Transport) BROWSER PARSER
+// ══════════════════════════════════════════════════════════════════════
+const XPT = (() => {
+  // Read ASCII string from buffer
+  function readStr(buf, off, len) {
+    let s = "";
+    for (let i = 0; i < len; i++) s += String.fromCharCode(buf[off + i]);
+    return s;
+  }
+
+  // Convert IBM mainframe float (8 bytes, big-endian) to IEEE double
+  function ibmToIeee(buf, off) {
+    // Check for zero
+    let allZero = true;
+    for (let i = 0; i < 8; i++) { if (buf[off + i] !== 0) { allZero = false; break; } }
+    if (allZero) return 0;
+
+    // Check for SAS missing values: first byte is the missing indicator, rest are 0x00
+    const firstByte = buf[off];
+    let restZero = true;
+    for (let i = 1; i < 8; i++) { if (buf[off + i] !== 0) { restZero = false; break; } }
+    if (firstByte && restZero) return null; // SAS missing value
+
+    // IBM format: Sign(1) Exponent(7) Fraction(56)
+    // Exponent is excess-64, base-16
+    const sign = (buf[off] & 0x80) ? -1 : 1;
+    const exp = (buf[off] & 0x7F) - 64;
+
+    // Build fraction from remaining 7 bytes (56 bits)
+    let frac = 0;
+    for (let i = 1; i < 8; i++) {
+      frac = frac * 256 + buf[off + i];
+    }
+    // Fraction is 0.xxxxx in base-16, so divide by 2^56
+    if (frac === 0) return 0;
+    return sign * frac * Math.pow(16, exp) / Math.pow(2, 56);
+  }
+
+  function parse(arrayBuffer) {
+    const buf = new Uint8Array(arrayBuffer);
+    let pos = 0;
+
+    // Helper: read next 80-byte record as string
+    function nextRecord() {
+      const s = readStr(buf, pos, 80);
+      pos += 80;
+      return s;
+    }
+
+    // 1. Library header — supports V5 ("LIBRARY HEADER") and V8 ("LIBV8")
+    const libHeader = nextRecord();
+    if (!libHeader.includes("HEADER RECORD*******")) {
+      throw new Error("Not a valid XPT file (missing library header)");
+    }
+
+    // 2-3. Two real header records (skip)
+    nextRecord(); nextRecord();
+
+    // Now parse members
+    const allRows = [];
+    let header = null;
+
+    while (pos < buf.length) {
+      // Check for member header — V5: "MEMBER HEADER", V8: "MEMBV8"
+      const rec = readStr(buf, pos, Math.min(80, buf.length - pos));
+      if (!rec.includes("HEADER RECORD*******") || (!rec.includes("MEMB") && !rec.includes("MEMBER"))) break;
+      nextRecord(); // member header
+
+      // DSCRPTR/DSCPTV8 header
+      nextRecord();
+
+      // Member header data (2 records)
+      const memberData1 = nextRecord();
+      const dsName = memberData1.substring(8, 16).trim();
+      nextRecord(); // second member header data
+
+      // NAMESTR/NAMSTV8 header — extract variable count
+      const namestrHeader = nextRecord();
+      // V5: count at position 54 (4 chars). V8: count at position 48 (8+ chars)
+      let nVars;
+      if (namestrHeader.includes("NAMSTV8")) {
+        // V8 format: 8-digit count starting around position 48
+        nVars = parseInt(namestrHeader.substring(48, 58).trim(), 10);
+      } else {
+        // V5 format: 4-digit count at position 54
+        nVars = parseInt(namestrHeader.substring(54, 58).trim(), 10);
+      }
+
+      // Read NAMESTR records — each is 140 bytes, streamed in 80-byte chunks
+      const namestrTotalBytes = nVars * 140;
+      const namestrRecords = Math.ceil(namestrTotalBytes / 80);
+      const namestrBuf = new Uint8Array(namestrRecords * 80);
+      for (let r = 0; r < namestrRecords; r++) {
+        namestrBuf.set(buf.slice(pos, pos + 80), r * 80);
+        pos += 80;
+      }
+
+      // Parse each NAMESTR (140 bytes each)
+      const columns = [];
+      for (let v = 0; v < nVars; v++) {
+        const base = v * 140;
+        const ntype = (namestrBuf[base] << 8) | namestrBuf[base + 1]; // 1=num, 2=char
+        const nlng = (namestrBuf[base + 4] << 8) | namestrBuf[base + 5]; // length in obs
+        const nvar0 = (namestrBuf[base + 6] << 8) | namestrBuf[base + 7]; // varnum
+        const nname = readStr(namestrBuf, base + 8, 8).trim();
+        columns.push({ name: nname, type: ntype, length: nlng, varnum: nvar0 });
+      }
+
+      // Sort by varnum and compute positions (npos unreliable in V8)
+      columns.sort((a, b) => a.varnum - b.varnum);
+      let cpos = 0;
+      for (const col of columns) { col.pos = cpos; cpos += col.length; }
+      const obsLength = cpos;
+
+      // OBS header — V5: "OBS HEADER", V8: "OBSV8"
+      const obsHeader = nextRecord();
+      if (!obsHeader.includes("HEADER RECORD*******") || (!obsHeader.includes("OBS"))) {
+        throw new Error("Expected OBS header, got: " + obsHeader.substring(0, 40));
+      }
+
+      // Build header row
+      header = columns.map(c => c.name);
+
+      // Read observation data — streamed in 80-byte records
+      // Read all remaining data until next HEADER or end of file
+      const dataChunks = [];
+      while (pos < buf.length) {
+        const peek = readStr(buf, pos, Math.min(30, buf.length - pos));
+        if (peek.startsWith("HEADER RECORD*******")) break;
+        dataChunks.push(buf.slice(pos, pos + 80));
+        pos += 80;
+      }
+
+      // Concatenate all data chunks
+      const dataBuf = new Uint8Array(dataChunks.length * 80);
+      for (let i = 0; i < dataChunks.length; i++) {
+        dataBuf.set(dataChunks[i], i * 80);
+      }
+
+      // Parse observations
+      const totalDataBytes = dataBuf.length;
+      let dpos = 0;
+      const rows = [header];
+
+      while (dpos + obsLength <= totalDataBytes) {
+        const row = [];
+        for (const col of columns) {
+          const cOff = dpos + col.pos;
+          if (col.type === 1) {
+            // Numeric — IBM float
+            row.push(ibmToIeee(dataBuf, cOff));
+          } else {
+            // Character
+            row.push(readStr(dataBuf, cOff, col.length).trim());
+          }
+        }
+        // Skip padding rows (all spaces/nulls)
+        const hasData = row.some(v => v !== null && v !== "" && v !== 0);
+        if (hasData) rows.push(row);
+        dpos += obsLength;
+      }
+
+      return rows; // Return first dataset only (DS should be one dataset)
+    }
+
+    throw new Error("No datasets found in XPT file");
+  }
+
+  return { parse };
+})();
+
+
+// ══════════════════════════════════════════════════════════════════════
+// DS DATASET PROCESSING
+// ══════════════════════════════════════════════════════════════════════
+let dsData = null; // { sfSubjects: Set, dcSubjects: Set, allDsSubjects: Set }
+
+function parseDSDataset(rows) {
+  // rows = [ [header...], [row1...], [row2...], ... ]
+  if (!rows || rows.length < 2) throw new Error("DS dataset is empty or has no data rows.");
+
+  const header = rows[0].map(h => String(h || "").toUpperCase().trim());
+  const usubjidIdx = header.indexOf("USUBJID");
+  const dsscat = header.indexOf("DSSCAT");
+  const dsdecod = header.indexOf("DSDECOD");
+  const dsstdyIdx = header.indexOf("DSSTDY");
+
+  if (usubjidIdx < 0) throw new Error("DS dataset is missing USUBJID variable.");
+  if (dsdecod < 0) throw new Error("DS dataset is missing DSDECOD variable.");
+  if (dsscat < 0) throw new Error("DS dataset is missing DSSCAT variable.");
+
+  const sfSubjects = new Set();
+  const dcSubjects = new Set();
+  const allDsSubjects = new Set();
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+
+    const subj = String(row[usubjidIdx] || "").trim();
+    if (!subj) continue;
+    allDsSubjects.add(subj);
+
+    const decod = String(row[dsdecod] || "").toUpperCase().trim();
+    const scat = String(row[dsscat] || "").toUpperCase().trim();
+
+    // Screen Failure: DSDECOD = 'SCREEN FAILURE'
+    if (decod === "SCREEN FAILURE") {
+      sfSubjects.add(subj);
+    }
+
+    // Discontinued/Completed: DSSCAT = 'STUDY PARTICIPATION' AND DSSTDY > 1
+    if (scat === "STUDY PARTICIPATION") {
+      let stdy = null;
+      if (dsstdyIdx >= 0 && row[dsstdyIdx] !== null && row[dsstdyIdx] !== undefined && row[dsstdyIdx] !== "") {
+        stdy = Number(row[dsstdyIdx]);
+      }
+      if (stdy !== null && !isNaN(stdy) && stdy > 1) {
+        dcSubjects.add(subj);
+      }
+    }
+  }
+
+  return { sfSubjects, dcSubjects, allDsSubjects };
+}
+
+function getFilteredUSUBJIDs(filterValue) {
+  if (!dsData || filterValue === "all") return null; // null = no filtering
+
+  let subjects = new Set();
+  if (filterValue === "sf") {
+    subjects = dsData.sfSubjects;
+  } else if (filterValue === "dc") {
+    subjects = dsData.dcSubjects;
+  } else if (filterValue === "sf_dc") {
+    subjects = new Set([...dsData.sfSubjects, ...dsData.dcSubjects]);
+  }
+  return subjects;
+}
+
+
+// ── Classification Rules ──────────────────────────────────────────────
+const DM_RULES = [
+  { re: /null value in \w+ variable marked as required/i, rat: "Required variable is null; likely missing or uncoded source data" },
+  { re: /missing values for one or more variables subject to meddra/i, rat: "Verbatim terms not coded in MedDRA; source terms need review" },
+  { re: /missing end time-point value/i, rat: "Missing end dates/ongoing flags that should have been collected at site" },
+  { re: /missing start time-point value/i, rat: "Missing start dates that should have been collected at site" },
+  { re: /missing values for \w+stdtc.*when.*endtc.*is provided/i, rat: "Records have end dates but no start date info collected" },
+  { re: /missing value for rficdtc/i, rat: "Missing informed consent date in source data" },
+  { re: /age is not provided/i, rat: "Missing age; likely due to missing birth date or consent date at source" },
+  { re: /rfstdtc is not provided for a randomized subject/i, rat: "Randomized subject missing first dose/reference start date" },
+  { re: /rfstdtc is after rfendtc/i, rat: "Reference start date after end date; likely data entry error" },
+  { re: /rfstdtc is populated for subject who did not receive treatment/i, rat: "Subject not treated but has first dose date; data contradiction" },
+  { re: /actarm does not equal arm/i, rat: "Actual treatment arm differs from planned; needs site clarification" },
+  { re: /dsstdtc is before rficdtc/i, rat: "Disposition date before informed consent; likely date entry error" },
+  { re: /null value in ectrt variable/i, rat: "Missing treatment name in exposure data at source" },
+  { re: /qsorres.*populated.*qsstat.*not done/i, rat: "Questionnaire marked not done but has results; data contradiction" },
+  { re: /duplicate records in mh domain/i, rat: "Possible duplicate medical history entries at source" },
+  { re: /duplicate records in ec domain/i, rat: "Possible duplicate exposure entries at source" },
+  { re: /inconsistent value for \w+ within \w+term/i, rat: "Same verbatim term coded differently; coding inconsistency at source" },
+  { re: /cmdosu value not found/i, rat: "Non-standard dose unit collected at site" },
+  { re: /cmroute value not found/i, rat: "Non-standard route of administration collected at site" },
+  { re: /missing value for cmdosu when/i, rat: "Dose value provided but no unit collected" },
+  { re: /armnrs is not populated.*when.*actarm/i, rat: "ARMNRS not populated when ARM is missing; may need site clarification" },
+];
+
+const PROG_RULES = [
+  { re: /missing epoch value/i, rat: "EPOCH derivation logic needs to be applied in programming" },
+  { re: /epoch value not found/i, rat: "EPOCH value needs to match CDISC controlled terminology" },
+  { re: /qeval is null when qorig/i, rat: "QEVAL population logic needs programming fix" },
+  { re: /usubjid\/visit\/visitnum.*do not match sv/i, rat: "Visit mapping between domains and SV needs alignment" },
+  { re: /^duplicate records$/i, rat: "Deduplication logic needed in SDTM programming" },
+  { re: /value for \w+enrf is populated when rfendtc is null/i, rat: "ENRF derivation should check for RFENDTC availability" },
+  { re: /missing idvar value/i, rat: "RELREC/SUPPQUAL IDVAR derivation needs fix" },
+  { re: /inconsistent value for \w+tpt/i, rat: "TPT mapping/derivation needs standardization" },
+  { re: /unexpected character value in qval/i, rat: "QVAL formatting/mapping needs review" },
+  { re: /missing value for \w+stresc/i, rat: "STRESC derivation logic needs fix" },
+  { re: /lborres is not numeric/i, rat: "LB result standardization logic needs review" },
+  { re: /ecstat does not equal/i, rat: "EC status derivation logic needs review" },
+  { re: /ecdose is not greater than 0/i, rat: "EC dose derivation logic needs review" },
+  { re: /missing value for rfxendtc/i, rat: "DM reference date derivation needs fix" },
+  { re: /no treatment emergent info/i, rat: "TRTEMFL derivation logic needs to be applied" },
+  { re: /multiple \w+lobxfl records/i, rat: "Baseline flag logic producing duplicates; needs fix" },
+  { re: /variable appears in dataset.*not in sdtm model/i, rat: "Non-standard variable included; review spec" },
+  { re: /model permissible variable/i, rat: "Permissible variable inclusion needs review per spec" },
+  { re: /permissible variable with missing value/i, rat: "Variable included but never populated; consider removing" },
+  { re: /expected variable with missing value/i, rat: "Expected variable not populated; derivation needed" },
+  { re: /variable not recommended/i, rat: "Deprecated variable used; consider removing" },
+  { re: /no last observation before exposure/i, rat: "LOBXFL derivation missing for some subjects" },
+  { re: /no \w+lobxfl variable/i, rat: "LOBXFL variable needs to be added to custom domain" },
+  { re: /invalid referenced record/i, rat: "RELREC references pointing to non-existent records" },
+  { re: /suppqual duplicate/i, rat: "Duplicate SUPP records; deduplication needed" },
+  { re: /duplicate visitnum/i, rat: "VISITNUM assignment logic producing duplicates" },
+  { re: /variable length is too long/i, rat: "Variable length in define.xml exceeds actual max; adjust metadata" },
+  { re: /missing define\.xml/i, rat: "define.xml not included in submission package" },
+  { re: /missing \w+ domain when/i, rat: "Domain needs to be created" },
+  { re: /missing \w+ dataset/i, rat: "Domain needs to be created or justified" },
+  { re: /lbstre?sn is populated.*lbstnr/i, rat: "Normal range mapping incomplete" },
+  { re: /stresc is null when \w+lobxfl/i, rat: "Baseline flag set but no standardized result; logic conflict" },
+  { re: /dataset \w+ class not recognized/i, rat: "Custom domain class needs proper define.xml specification" },
+  { re: /negative value of \w+stdy/i, rat: "Study day derivation producing negative values; review logic" },
+  { re: /value not found in.*extensible codelist/i, rat: "Value needs controlled terminology mapping" },
+  { re: /variable is present when \w+loc variable is missing/i, rat: "LOC variable needs to be added when LAT is present" },
+];
+
+function classify(msg, ds) {
+  for (const r of DM_RULES) {
+    if (r.re.test(msg)) {
+      if (r.exDs && r.exDs.includes(ds)) continue;
+      return { cat: "DM", rat: r.rat };
+    }
+  }
+  for (const r of PROG_RULES) {
+    if (r.re.test(msg)) return { cat: "PROG", rat: r.rat };
+  }
+  return { cat: "PROG", rat: "Review mapping/derivation logic" };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function extractUSUBJID(vars, vals) {
+  // Method 1: Use Variables column to locate USUBJID position, read from Values
+  if (vars && vals) {
+    const v = vars.split(", "), a = vals.split(", ");
+    const i = v.indexOf("USUBJID");
+    if (i >= 0 && i < a.length && a[i].trim()) return a[i].trim();
+  }
+  // Method 2: Scan Values column directly for a USUBJID-like value
+  // USUBJID format: STUDYID-SITEID-SUBJID (e.g., J2A-MC-GZPT-17730-10483)
+  // Require at least 3 hyphens to avoid matching bare STUDYID values
+  if (vals) {
+    const parts = vals.split(", ");
+    for (const p of parts) {
+      const trimmed = p.trim();
+      const hyphens = (trimmed.match(/-/g) || []).length;
+      if (trimmed && hyphens >= 3 && /^[A-Za-z0-9]+-[A-Za-z0-9]/.test(trimmed) && trimmed.length >= 10) {
+        return trimmed;
+      }
+    }
+  }
+  return "";
+}
+
+function extractKeyValues(vars, vals) {
+  if (!vars || !vals) return "";
+  const v = vars.split(", "), a = vals.split(", ");
+  const skip = new Set(["STUDYID","DOMAIN","USUBJID"]);
+  const out = [];
+  for (let i = 0; i < v.length && i < a.length; i++) {
+    if (!skip.has(v[i]) && !v[i].startsWith("DM:")) out.push(v[i] + "=" + a[i]);
+  }
+  return out.join("; ");
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── Excel XML Generation ──────────────────────────────────────────────
+function buildExcelXML(dmSum, progSum, dmDet) {
+  const styles = `<Styles>
+    <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Arial" ss:Size="11"/><Interior ss:Color="#1F4E79" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+    <Style ss:ID="bd"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:WrapText="1" ss:Vertical="Top"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+    <Style ss:ID="nm"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Center" ss:Vertical="Top"/><NumberFormat ss:Format="#,##0"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+  </Styles>`;
+
+  function hdrRow(cols) { return "<Row>" + cols.map(c => `<Cell ss:StyleID="hdr"><Data ss:Type="String">${esc(c)}</Data></Cell>`).join("") + "</Row>"; }
+  function dataRow(cells) { return "<Row>" + cells.map(c => c.n !== undefined ? `<Cell ss:StyleID="nm"><Data ss:Type="Number">${c.n}</Data></Cell>` : `<Cell ss:StyleID="bd"><Data ss:Type="String">${esc(c.s)}</Data></Cell>`).join("") + "</Row>"; }
+
+  const sumCols = `<Column ss:Width="40"/><Column ss:Width="350"/><Column ss:Width="120"/><Column ss:Width="90"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="320"/>`;
+  const dmSumHdr = hdrRow(["#","Message","Datasets","Record Count","Impact","Type","Rationale"]);
+  const progSumCols = `<Column ss:Width="350"/><Column ss:Width="120"/><Column ss:Width="90"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="320"/>`;
+  const progSumHdr = hdrRow(["Message","Datasets","Record Count","Impact","Type","Rationale"]);
+
+  let dmSheet = `<Worksheet ss:Name="DM Query Issues"><Table>${sumCols}${dmSumHdr}`;
+  for (let i = 0; i < dmSum.length; i++) { const r = dmSum[i]; dmSheet += dataRow([{n:i+1},{s:r.message},{s:r.datasets},{n:r.count},{s:r.impact},{s:r.type},{s:r.rationale}]); }
+  dmSheet += "</Table></Worksheet>";
+
+  let progSheet = `<Worksheet ss:Name="Non-DM Issues"><Table>${progSumCols}${progSumHdr}`;
+  for (const r of progSum) progSheet += dataRow([{s:r.message},{s:r.datasets},{n:r.count},{s:r.impact},{s:r.type},{s:r.rationale}]);
+  progSheet += "</Table></Worksheet>";
+
+  const detCols = `<Column ss:Width="200"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="350"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="450"/>`;
+  const detHdr = hdrRow(["USUBJID","Dataset","Rule ID","Message","Impact","Type","Key Values"]);
+  let detSheet = `<Worksheet ss:Name="DM Query Detail"><Table>${detCols}${detHdr}`;
+  for (const r of dmDet) detSheet += dataRow([{s:r.usubjid||"N/A (Dataset-Level)"},{s:r.dataset},{s:r.ruleId},{s:r.message},{s:r.impact},{s:r.type},{s:r.keyValues}]);
+  detSheet += "</Table></Worksheet>";
+
+  return `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${styles}${dmSheet}${progSheet}${detSheet}</Workbook>`;
+}
+
+// ── DOM References ────────────────────────────────────────────────────
+const uploadZone   = document.getElementById("uploadZone");
+const fileInput    = document.getElementById("fileInput");
+const uploadLabel  = document.getElementById("uploadLabel");
+const dsUploadZone = document.getElementById("dsUploadZone");
+const dsFileInput  = document.getElementById("dsFileInput");
+const dsUploadLabel= document.getElementById("dsUploadLabel");
+const dsStatusWrap = document.getElementById("dsStatusWrap");
+const dsStatusText = document.getElementById("dsStatusText");
+const dsRemoveBtn  = document.getElementById("dsRemoveBtn");
+const spinnerEl    = document.getElementById("spinner");
+const spinnerMsg   = document.getElementById("spinnerMsg");
+const errorBox     = document.getElementById("errorBox");
+const errorMsg     = document.getElementById("errorMsg");
+const resultsEl    = document.getElementById("results");
+const downloadBtn  = document.getElementById("downloadBtn");
+const resetBtn     = document.getElementById("resetBtn");
+const filterBar    = document.getElementById("filterBar");
+const filterSelect = document.getElementById("filterSelect");
+const filterCount  = document.getElementById("filterCount");
+const filterInfo   = document.getElementById("filterInfo");
+
+let storedDmSum = [], storedProgSum = [], storedDmDet = [];
+let rawP21Data = null; // Store raw parsed P21 data for re-filtering
+let excludedMessages = new Set(); // Messages already applied (in current report)
+let pendingExclusions = new Set(); // Messages staged but not yet applied
+let lastDmSumFull = []; // Full DM summary for # lookup
+
+const exclusionInput = document.getElementById("exclusionInput");
+const exclusionBtn   = document.getElementById("exclusionBtn");
+const exclusionActive= document.getElementById("exclusionActive");
+const regenWrap      = document.getElementById("regenWrap");
+const regenBtn       = document.getElementById("regenBtn");
+
+// ── DS Upload Event Listeners ─────────────────────────────────────────
+dsUploadZone.addEventListener("click", () => dsFileInput.click());
+dsUploadZone.addEventListener("dragover", e => { e.preventDefault(); dsUploadZone.classList.add("drag-over"); });
+dsUploadZone.addEventListener("dragleave", () => dsUploadZone.classList.remove("drag-over"));
+dsUploadZone.addEventListener("drop", e => {
+  e.preventDefault(); dsUploadZone.classList.remove("drag-over");
+  if (e.dataTransfer.files[0]) processDSFile(e.dataTransfer.files[0]);
+});
+dsFileInput.addEventListener("change", e => { if (e.target.files[0]) processDSFile(e.target.files[0]); });
+dsRemoveBtn.addEventListener("click", removeDSDataset);
+
+// ── P21 Upload Event Listeners ────────────────────────────────────────
+uploadZone.addEventListener("click", () => fileInput.click());
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault(); uploadZone.classList.remove("drag-over");
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+downloadBtn.addEventListener("click", downloadExcel);
+resetBtn.addEventListener("click", resetUI);
+
+// ── Filter Change ─────────────────────────────────────────────────────
+filterSelect.addEventListener("change", () => {
+  if (rawP21Data) {
+    classifyData(rawP21Data);
+  }
+});
+
+// ── Exclusion Logic ──────────────────────────────────────────────────
+exclusionBtn.addEventListener("click", stageExclusions);
+exclusionInput.addEventListener("keydown", e => { if (e.key === "Enter") stageExclusions(); });
+regenBtn.addEventListener("click", regenerateReport);
+
+function stageExclusions() {
+  const val = exclusionInput.value.trim();
+  if (!val || lastDmSumFull.length === 0) return;
+
+  const nums = val.split("/").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+  for (const n of nums) {
+    if (n >= 1 && n <= lastDmSumFull.length) {
+      pendingExclusions.add(lastDmSumFull[n - 1].message);
+    }
+  }
+  exclusionInput.value = "";
+  renderExclusionTags();
+  regenWrap.classList.remove("hidden");
+}
+
+function regenerateReport() {
+  // Move all pending into active exclusions
+  for (const msg of pendingExclusions) excludedMessages.add(msg);
+  pendingExclusions.clear();
+  regenWrap.classList.add("hidden");
+  if (rawP21Data) {
+    classifyData(rawP21Data);
+    downloadExcel();
+  }
+}
+
+function removeExclusion(msg) {
+  pendingExclusions.delete(msg);
+  excludedMessages.delete(msg);
+  renderExclusionTags();
+  // If nothing is pending anymore, hide regen button
+  if (pendingExclusions.size === 0 && excludedMessages.size > 0) {
+    // An applied exclusion was removed — need to re-generate
+    regenWrap.classList.remove("hidden");
+  } else if (pendingExclusions.size === 0) {
+    regenWrap.classList.add("hidden");
+  }
+}
+
+function clearAllExclusions() {
+  const hadApplied = excludedMessages.size > 0;
+  pendingExclusions.clear();
+  excludedMessages.clear();
+  renderExclusionTags();
+  if (hadApplied) {
+    // Need to re-generate to restore cleared items
+    regenWrap.classList.remove("hidden");
+  } else {
+    regenWrap.classList.add("hidden");
+  }
+}
+
+function renderExclusionTags() {
+  const allExclusions = new Set([...excludedMessages, ...pendingExclusions]);
+  if (allExclusions.size === 0) {
+    exclusionActive.classList.add("hidden");
+    return;
+  }
+  exclusionActive.classList.remove("hidden");
+  let html = "";
+  for (const msg of allExclusions) {
+    const shortMsg = msg.length > 60 ? msg.substring(0, 57) + "…" : msg;
+    const isPending = pendingExclusions.has(msg) && !excludedMessages.has(msg);
+    const tagClass = isPending ? "exclusion-tag pending" : "exclusion-tag";
+    html += `<span class="${tagClass}"><span class="tag-msg" title="${esc(msg)}">${esc(shortMsg)}</span><span class="tag-remove" onclick="removeExclusion(\`${msg.replace(/`/g, "'")}\`)">✕</span></span>`;
+  }
+  html += `<button class="exclusion-clear" onclick="clearAllExclusions()">Clear all</button>`;
+  exclusionActive.innerHTML = html;
+}
+
+// ── DS File Processing ────────────────────────────────────────────────
+function processDSFile(file) {
+  const ext = file.name.toLowerCase();
+  spinnerMsg.textContent = "Parsing DS dataset…";
+  spinnerEl.classList.remove("hidden");
+  errorBox.classList.add("hidden");
+
+  if (ext.endsWith(".csv")) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const rows = parseCSV(e.target.result);
+        finalizeDSLoad(rows, file.name);
+      } catch (err) {
+        showError("Error parsing CSV file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  } else if (ext.endsWith(".xpt")) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const rows = XPT.parse(e.target.result);
+        finalizeDSLoad(rows, file.name);
+      } catch (err) {
+        showError("Error parsing XPT file: " + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showError("Unsupported file format. Please upload a .csv or .xpt file.");
+  }
+}
+
+function finalizeDSLoad(rows, filename) {
+  try {
+    dsData = parseDSDataset(rows);
+    spinnerEl.classList.add("hidden");
+
+    // Update UI to show DS loaded
+    dsUploadZone.classList.add("hidden");
+    dsStatusWrap.classList.remove("hidden");
+
+    const sfCount = dsData.sfSubjects.size;
+    const dcCount = dsData.dcSubjects.size;
+    const totalSubj = dsData.allDsSubjects.size;
+    dsStatusText.textContent = `${filename} — ${totalSubj} subjects (${sfCount} Screen Failures, ${dcCount} Disc./Completed)`;
+
+    // Show filter bar if results are visible
+    if (!resultsEl.classList.contains("hidden")) {
+      filterBar.classList.remove("hidden");
+      updateFilterInfo();
+    }
+
+    // Re-run classification if P21 data already loaded
+    if (rawP21Data) {
+      classifyData(rawP21Data);
+    }
+  } catch (err) {
+    showError("Error processing DS dataset: " + err.message);
+  }
+}
+
+function removeDSDataset() {
+  dsData = null;
+  dsFileInput.value = "";
+  dsStatusWrap.classList.add("hidden");
+  dsUploadZone.classList.remove("hidden");
+  dsUploadLabel.textContent = "Optional: Upload SDTM DS dataset to filter by subject population";
+  filterBar.classList.add("hidden");
+  filterSelect.value = "all";
+
+  // Re-run classification without filter if P21 data loaded
+  if (rawP21Data) {
+    classifyData(rawP21Data);
+  }
+}
+
+function updateFilterInfo() {
+  const val = filterSelect.value;
+  if (!dsData) { filterInfo.textContent = ""; filterCount.textContent = ""; return; }
+
+  const subjects = getFilteredUSUBJIDs(val);
+  if (!subjects) {
+    filterInfo.textContent = "Showing all issues — no subject filter applied.";
+    filterCount.textContent = "";
+  } else {
+    const n = subjects.size;
+    const labels = { sf: "Screen Failures", dc: "Discontinued/Completed", sf_dc: "SF + Disc./Completed" };
+    filterInfo.textContent = `Filtering DM Query issues to ${labels[val]} subjects only.`;
+    filterCount.textContent = `${n} subject${n !== 1 ? "s" : ""}`;
+  }
+}
+
+// ── Main Processing ───────────────────────────────────────────────────
+function processFile(file) {
+  uploadLabel.textContent = file.name;
+  spinnerMsg.textContent = "Classifying issues…";
+  spinnerEl.classList.remove("hidden");
+  errorBox.classList.add("hidden");
+  resultsEl.classList.add("hidden");
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let data;
+      if (file.name.match(/\.csv$|\.tsv$/i)) {
+        data = parseCSV(e.target.result);
+      } else {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+        let sn = wb.SheetNames.find(n => n.toLowerCase().includes("issue detail"));
+        if (!sn) sn = wb.SheetNames[0];
+        data = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" });
+      }
+      rawP21Data = data;
+      classifyData(data);
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+  if (file.name.match(/\.csv$|\.tsv$/i)) reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/);
+  return lines.map(line => {
+    const cells = []; let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) { if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; } else if (ch === '"') inQ = false; else cur += ch; }
+      else { if (ch === '"') inQ = true; else if (ch === ',') { cells.push(cur.trim()); cur = ""; } else cur += ch; }
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
+}
+
+function classifyData(rows) {
+  // Find header row
+  let headerIdx = -1, colMap = {};
+  for (let i = 0; i < rows.length; i++) {
+    const lower = rows[i].map(c => String(c||"").toLowerCase().trim());
+    if (lower.includes("message") && lower.includes("dataset")) {
+      headerIdx = i;
+      lower.forEach((h,j) => { colMap[h] = j; });
+      break;
+    }
+  }
+  if (headerIdx < 0) { showError("Could not find header row with 'Message' and 'Dataset' columns. Make sure you upload the P21 validation report with an 'Issue Details' sheet."); return; }
+
+  const mi = colMap["message"], di = colMap["dataset"], ii = colMap["impact"], ti = colMap["type"];
+  const ri = colMap["rule id"], vi = colMap["variables"], ai = colMap["values"];
+
+  // Get current filter subjects
+  const filterVal = filterSelect.value;
+  const filterSubjects = getFilteredUSUBJIDs(filterVal);
+
+  const dmMap = {}, progMap = {}, dmDet = [];
+  let total = 0, filteredOut = 0;
+
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.every(c => !c && c !== 0)) continue;
+    const msg = String(row[mi]||"").trim();
+    if (!msg) continue;
+
+    const ds = String(row[di]||"").trim();
+    const imp = String(row[ii]||"").trim();
+    const tp = String(row[ti]||"").trim();
+    const ruleId = ri !== undefined ? String(row[ri]||"").trim() : "";
+    const vars = vi !== undefined ? String(row[vi]||"") : "";
+    const vals = ai !== undefined ? String(row[ai]||"") : "";
+
+    const usubjid = extractUSUBJID(vars, vals);
+
+    // Apply subject filter
+    if (filterSubjects) {
+      // If the row has a USUBJID, check if it's in the filter set
+      if (usubjid && !filterSubjects.has(usubjid)) {
+        filteredOut++;
+        continue;
+      }
+    }
+
+    total++;
+    const { cat, rat } = classify(msg, ds);
+    const key = msg + "|||" + imp + "|||" + tp;
+
+    // Issues without a USUBJID (dataset-level) always go to Non-DM.
+    // Messages excluded by the user also go to Non-DM.
+    const effectiveCat = (excludedMessages.has(msg) || !usubjid) ? "PROG" : cat;
+
+    if (effectiveCat === "DM") {
+      if (!dmMap[key]) dmMap[key] = { message: msg, impact: imp, type: tp, rationale: rat, count: 0, dsSet: new Set() };
+      dmMap[key].count++; if (ds) dmMap[key].dsSet.add(ds);
+      dmDet.push({ usubjid: usubjid || "", dataset: ds, ruleId, message: msg, impact: imp, type: tp, keyValues: extractKeyValues(vars, vals) });
+    } else {
+      if (!progMap[key]) progMap[key] = { message: msg, impact: imp, type: tp, rationale: rat, count: 0, dsSet: new Set() };
+      progMap[key].count++; if (ds) progMap[key].dsSet.add(ds);
+    }
+  }
+
+  const dmSum = Object.values(dmMap).map(r => ({ ...r, datasets: [...r.dsSet].sort().join(", ") })).sort((a,b) => b.count - a.count);
+  const progSum = Object.values(progMap).map(r => ({ ...r, datasets: [...r.dsSet].sort().join(", ") })).sort((a,b) => b.count - a.count);
+  dmDet.sort((a,b) => (a.usubjid||"").localeCompare(b.usubjid||"") || a.dataset.localeCompare(b.dataset));
+
+  storedDmSum = dmSum; storedProgSum = progSum; storedDmDet = dmDet;
+  lastDmSumFull = dmSum; // For # lookup in exclusion input
+
+  const dmTotal = dmSum.reduce((s,r) => s + r.count, 0);
+  const progTotal = progSum.reduce((s,r) => s + r.count, 0);
+
+  document.getElementById("dmCount").textContent = dmTotal.toLocaleString();
+  document.getElementById("dmTypes").textContent = dmSum.length + " unique types";
+  document.getElementById("progCount").textContent = progTotal.toLocaleString();
+  document.getElementById("progTypes").textContent = progSum.length + " unique types";
+  document.getElementById("totalCount").textContent = total.toLocaleString();
+  document.getElementById("detailCount").textContent = dmDet.length.toLocaleString() + " subject-level DM rows";
+
+  renderDmTable("dmTable", dmSum);
+  renderTable("progTable", progSum.slice(0, 10), "prog");
+  renderExclusionTags();
+
+  // Show/hide filter bar
+  if (dsData) {
+    filterBar.classList.remove("hidden");
+    updateFilterInfo();
+  } else {
+    filterBar.classList.add("hidden");
+  }
+
+  spinnerEl.classList.add("hidden");
+  resultsEl.classList.remove("hidden");
+}
+
+function renderDmTable(id, data) {
+  const tbody = document.getElementById(id);
+  tbody.innerHTML = "";
+  for (let i = 0; i < data.length; i++) {
+    const r = data[i];
+    const tr = document.createElement("tr");
+    tr.className = "dm-row";
+    tr.innerHTML = `<td class="row-num">${i + 1}</td><td class="msg">${esc(r.message)}</td><td class="ds">${esc(r.datasets)}</td><td class="cnt dm-cnt">${r.count.toLocaleString()}</td><td class="imp">${esc(r.impact)}</td><td class="rat">${esc(r.rationale)}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function renderTable(id, data, type) {
+  const tbody = document.getElementById(id);
+  tbody.innerHTML = "";
+  for (const r of data) {
+    const tr = document.createElement("tr");
+    tr.className = type + "-row";
+    tr.innerHTML = `<td class="msg">${esc(r.message)}</td><td class="ds">${esc(r.datasets)}</td><td class="cnt ${type}-cnt">${r.count.toLocaleString()}</td><td class="imp">${esc(r.impact)}</td><td class="rat">${esc(r.rationale)}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function downloadExcel() {
+  const xml = buildExcelXML(storedDmSum, storedProgSum, storedDmDet);
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const filterLabel = filterSelect.value === "all" ? "" : `_${filterSelect.value.toUpperCase()}`;
+  a.href = url; a.download = `P21_Issue_Classification${filterLabel}.xls`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showError(msg) {
+  spinnerEl.classList.add("hidden");
+  errorMsg.textContent = msg;
+  errorBox.classList.remove("hidden");
+}
+
+function resetUI() {
+  fileInput.value = "";
+  uploadLabel.textContent = "Drop your P21 report here or click to browse";
+  resultsEl.classList.add("hidden");
+  errorBox.classList.add("hidden");
+  spinnerEl.classList.add("hidden");
+  filterBar.classList.add("hidden");
+  filterSelect.value = "all";
+  storedDmSum = []; storedProgSum = []; storedDmDet = [];
+  rawP21Data = null;
+  excludedMessages.clear();
+  pendingExclusions.clear();
+  lastDmSumFull = [];
+  exclusionInput.value = "";
+  exclusionActive.classList.add("hidden");
+  regenWrap.classList.add("hidden");
+}
+</script>
+</body>
+</html>
