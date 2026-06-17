@@ -1133,6 +1133,7 @@ savedExclClear.addEventListener("click", () => {
   excludedMessages.clear();
   pendingExclusions.clear();
   savedExclBanner.classList.add("hidden");
+  document.getElementById("rememberCheckbox").checked = false;
   renderExclusionTags();
   regenWrap.classList.add("hidden");
   if (rawP21Data) {
@@ -1298,17 +1299,21 @@ function classifyData(rows) {
   const mi = colMap["message"], di = colMap["dataset"], ii = colMap["impact"], ti = colMap["type"];
   const ri = colMap["rule id"], vi = colMap["variables"], ai = colMap["values"];
 
-  // Extract STUDYID and load saved exclusions on initial load
+  // Extract STUDYID — only load saved exclusions when a new study is detected
+  // (i.e. on fresh file upload, not on re-classify calls for the same study)
   const detectedStudyId = extractSTUDYID(rows, headerIdx, colMap);
   if (detectedStudyId && detectedStudyId !== currentStudyId) {
     currentStudyId = detectedStudyId;
-    // Load saved exclusions for this study
-    const saved = getSavedExclusions(currentStudyId);
-    if (saved.length > 0) {
-      for (const key of saved) excludedMessages.add(key);
-      showSavedExclusionBanner(saved.length, currentStudyId);
+    // Only load saved exclusions if none are already staged/applied this session
+    // (avoids re-loading after user has already cleared them)
+    if (excludedMessages.size === 0 && pendingExclusions.size === 0) {
+      const saved = getSavedExclusions(currentStudyId);
+      if (saved.length > 0) {
+        for (const key of saved) excludedMessages.add(key);
+        showSavedExclusionBanner(saved.length, currentStudyId);
+      }
     }
-  } else if (detectedStudyId) {
+  } else if (!currentStudyId && detectedStudyId) {
     currentStudyId = detectedStudyId;
   }
 
