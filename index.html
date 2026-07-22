@@ -62,6 +62,24 @@
   .upload-zone.ds-zone .label { font-size: 15px; color: #93c5b8; }
   .upload-zone.ds-zone .hint { font-size: 12px; color: #4d7a6b; }
 
+  /* Previous Report Upload Zone — smaller, secondary */
+  .upload-zone.prev-zone {
+    padding: 30px 32px;
+    border-color: #2f2b47;
+    background: rgba(139,92,246,0.03);
+    margin-bottom: 32px;
+  }
+  .upload-zone.prev-zone:hover, .upload-zone.prev-zone.drag-over {
+    border-color: #8b5cf6; background: rgba(139,92,246,0.07);
+  }
+  .upload-zone.prev-zone .icon { font-size: 32px; margin-bottom: 10px; }
+  .upload-zone.prev-zone .label { font-size: 15px; color: #d4c483; }
+  .upload-zone.prev-zone .hint { font-size: 12px; color: #a3925f; }
+  .ds-status.prev-loaded {
+    background: rgba(139,92,246,0.12); color: #c4b5fd;
+    border: 1px solid rgba(139,92,246,0.3);
+  }
+
   /* DS Status Badge */
   .ds-status {
     display: inline-flex; align-items: center; gap: 8px;
@@ -107,6 +125,13 @@
     font-size: 13px; color: #34d399; font-weight: 600;
     white-space: nowrap;
   }
+
+  .filter-bar.new-filter-bar {
+    background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.18);
+  }
+  .filter-bar.new-filter-bar .filter-label { color: #a78bfa; }
+  .filter-bar.new-filter-bar select:focus { border-color: #8b5cf6; }
+  .filter-bar.new-filter-bar .active-filter-count { color: #c4b5fd; }
 
   /* Remove DS button */
   .ds-remove-btn {
@@ -238,13 +263,14 @@
   .error-box .msg { color: #e57373; font-size: 14px; }
 
   /* Summary Cards */
-  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .card {
     border-radius: 14px; padding: 22px 26px;
   }
   .card.dm { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
   .card.prog { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); }
   .card.total { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+  .card.fitness { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
   .card .card-label {
     font-size: 11.5px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 1.2px; margin-bottom: 8px;
@@ -252,6 +278,7 @@
   .card.dm .card-label { color: #f59e0b; }
   .card.prog .card-label { color: #3b82f6; }
   .card.total .card-label { color: #7a8ba3; }
+  .card.fitness .card-label { color: #10b981; }
   .card .card-num {
     font-size: 32px; font-weight: 700; margin-bottom: 4px;
     font-family: 'JetBrains Mono', monospace;
@@ -259,6 +286,7 @@
   .card.dm .card-num { color: #fbbf24; }
   .card.prog .card-num { color: #60a5fa; }
   .card.total .card-num { color: #e0e6ed; }
+  .card.fitness .card-num { color: #34d399; }
   .card .card-sub { font-size: 13px; color: #5e7083; }
 
   /* Download Button */
@@ -292,7 +320,15 @@
     font-weight: 600; font-size: 11px; text-transform: uppercase;
     letter-spacing: 0.8px; white-space: nowrap;
   }
+  th.sortable { cursor: pointer; user-select: none; transition: color 0.15s; }
+  th.sortable:hover { color: #f59e0b; }
+  th.sort-asc::after { content: " ▲"; font-size: 9px; color: #f59e0b; }
+  th.sort-desc::after { content: " ▼"; font-size: 9px; color: #f59e0b; }
+  th.sort-asc, th.sort-desc { color: #f59e0b; }
   td { padding: 9px 13px; border-bottom: 1px solid #1e2d42; }
+  .dm-row:hover td { background: rgba(251,191,36,0.04); }
+  .dm-detail-row td { border-bottom: 1px solid #1e2d42; background: #0f1824; }
+  .dm-detail-row.reject-row td { background: rgba(220,38,38,0.08); }
   td.msg { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
   td.ds { color: #7a8ba3; white-space: nowrap; }
   td.cnt { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
@@ -357,14 +393,24 @@
       <h1>Issue Classifier</h1>
     </div>
     <p>Upload your Pinnacle 21 validation report to automatically classify issues into DM Queries vs Non-DM items with a downloadable Excel output.</p>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:18px;">
+      <div style="display:inline-flex; align-items:baseline; gap:10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:7px 16px;">
+        <span style="font-weight:700; color:#f59e0b; font-size:14px; white-space:nowrap;">DM Query Issues</span>
+        <span style="color:#9aabbc; font-size:13px;">Issues with potential to be queried by Data Management.</span>
+      </div>
+      <div style="display:inline-flex; align-items:baseline; gap:10px; background:rgba(77,159,236,0.08); border:1px solid rgba(77,159,236,0.25); border-radius:10px; padding:7px 16px;">
+        <span style="font-weight:700; color:#4d9fec; font-size:14px; white-space:nowrap;">Non-DM Issues</span>
+        <span style="color:#9aabbc; font-size:13px;">Issues related to spec, SDTM programming, or to be resolved through P21 explanations.</span>
+      </div>
+    </div>
   </div>
 
   <!-- P21 Upload Zone -->
   <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.tsv">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
     <div class="icon">📂</div>
     <div class="label" id="uploadLabel">Drop your P21 report here or click to browse</div>
-    <div class="hint">Supports .xlsx, .xls, .csv, .tsv</div>
+    <div class="hint">Supports .xlsx, .xls (full Enterprise export, needed for Data Fitness Score)</div>
   </div>
 
   <!-- DS Upload Zone -->
@@ -383,6 +429,25 @@
     </div>
     <div style="margin-top: 8px;">
       <button class="ds-remove-btn" id="dsRemoveBtn">✕ Remove DS dataset</button>
+    </div>
+  </div>
+
+  <!-- Previous Report Upload Zone -->
+  <div class="upload-zone prev-zone" id="prevUploadZone">
+    <input type="file" id="prevFileInput" accept=".xlsx,.xls">
+    <div class="icon">🕓</div>
+    <div class="label" id="prevUploadLabel">Optional: Upload your previous P21 report to flag new issues</div>
+    <div class="hint">Supports .xlsx, .xls — Used to identify which issues are new since the last export</div>
+  </div>
+
+  <!-- Previous Report Status (shown after previous report load) -->
+  <div class="hidden" id="prevStatusWrap" style="text-align:center; margin-bottom: 20px;">
+    <div class="ds-status prev-loaded">
+      <span class="check">✓</span>
+      <span id="prevStatusText">Previous report loaded</span>
+    </div>
+    <div style="margin-top: 8px;">
+      <button class="ds-remove-btn" id="prevRemoveBtn">✕ Remove previous report</button>
     </div>
   </div>
 
@@ -413,6 +478,17 @@
       <div class="filter-info" id="filterInfo"></div>
     </div>
 
+    <!-- New Issues Filter Bar (only shown when a previous report is loaded) -->
+    <div class="filter-bar new-filter-bar hidden" id="newFilterBar">
+      <span class="filter-label">🆕 Issue View</span>
+      <select id="newFilterSelect">
+        <option value="all">All Issues</option>
+        <option value="new">New Issues Only (since previous report)</option>
+      </select>
+      <span class="active-filter-count" id="newFilterCount"></span>
+      <div class="filter-info" id="newFilterInfo"></div>
+    </div>
+
     <!-- Auto-applied exclusions notification -->
     <div class="saved-excl-banner hidden" id="savedExclBanner">
       <span class="saved-excl-icon">💾</span>
@@ -438,6 +514,11 @@
         <div class="card-num" id="totalCount">0</div>
         <div class="card-sub" id="detailCount">0 subject-level DM rows</div>
       </div>
+      <div class="card fitness">
+        <div class="card-label">Data Fitness Score</div>
+        <div class="card-num" id="fitnessScore">—</div>
+        <div class="card-sub" id="fitnessSub">From P21 Overview</div>
+      </div>
     </div>
 
     <!-- Download -->
@@ -448,7 +529,7 @@
       <h3 class="dm-title">DM Query Issues</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Message</th><th>Dataset</th><th>Count</th><th>Impact</th><th>Rationale</th></tr></thead>
+          <thead><tr><th>#</th><th>Message</th><th class="sortable" id="dmSortDataset">Dataset</th><th class="sortable" id="dmSortCount">Count</th><th class="sortable sort-desc" id="dmSortImpact">Impact</th><th>Rationale</th><th style="width:32px;"></th></tr></thead>
           <tbody id="dmTable"></tbody>
         </table>
       </div>
@@ -807,7 +888,7 @@ function classify(msg, ds) {
   for (const r of PROG_RULES) {
     if (r.re.test(msg)) return { cat: "PROG", rat: r.rat };
   }
-  return { cat: "PROG", rat: "Review mapping/derivation logic" };
+  return { cat: "DM", rat: "Review mapping/derivation logic" };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -892,7 +973,7 @@ function clearSavedExclusions(studyId) {
 }
 
 // ── Excel XML Generation ──────────────────────────────────────────────
-function buildExcelXML(dmSum, progSum, dmDet) {
+function buildExcelXML(dmSum, progSum, dmDet, includeNewIssueCol) {
   const styles = `<Styles>
     <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Arial" ss:Size="11"/><Interior ss:Color="#1F4E79" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
     <Style ss:ID="bd"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:WrapText="1" ss:Vertical="Top"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
@@ -915,10 +996,16 @@ function buildExcelXML(dmSum, progSum, dmDet) {
   for (const r of progSum) progSheet += dataRow([{s:r.message},{s:r.datasets},{n:r.count},{s:r.impact},{s:r.type},{s:r.rationale}]);
   progSheet += "</Table></Worksheet>";
 
-  const detCols = `<Column ss:Width="200"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="350"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="450"/>`;
-  const detHdr = hdrRow(["USUBJID","Dataset","Rule ID","Message","Impact","Type","Key Values"]);
+  const detCols = `<Column ss:Width="200"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="350"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="450"/>` + (includeNewIssueCol ? `<Column ss:Width="80"/>` : "");
+  const detHdrCols = ["USUBJID","Dataset","Rule ID","Message","Impact","Type","Key Values"];
+  if (includeNewIssueCol) detHdrCols.push("New Issue");
+  const detHdr = hdrRow(detHdrCols);
   let detSheet = `<Worksheet ss:Name="DM Query Detail"><Table>${detCols}${detHdr}`;
-  for (const r of dmDet) detSheet += dataRow([{s:r.usubjid||"N/A (Dataset-Level)"},{s:r.dataset},{s:r.ruleId},{s:r.message},{s:r.impact},{s:r.type},{s:r.keyValues}]);
+  for (const r of dmDet) {
+    const cells = [{s:r.usubjid||"N/A (Dataset-Level)"},{s:r.dataset},{s:r.ruleId},{s:r.message},{s:r.impact},{s:r.type},{s:r.keyValues}];
+    if (includeNewIssueCol) cells.push({s: r.isNew ? "Y" : ""});
+    detSheet += dataRow(cells);
+  }
   detSheet += "</Table></Worksheet>";
 
   return `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${styles}${dmSheet}${progSheet}${detSheet}</Workbook>`;
@@ -945,13 +1032,28 @@ const filterBar    = document.getElementById("filterBar");
 const filterSelect = document.getElementById("filterSelect");
 const filterCount  = document.getElementById("filterCount");
 const filterInfo   = document.getElementById("filterInfo");
+const prevUploadZone  = document.getElementById("prevUploadZone");
+const prevFileInput   = document.getElementById("prevFileInput");
+const prevUploadLabel = document.getElementById("prevUploadLabel");
+const prevStatusWrap  = document.getElementById("prevStatusWrap");
+const prevStatusText  = document.getElementById("prevStatusText");
+const prevRemoveBtn   = document.getElementById("prevRemoveBtn");
+const newFilterBar    = document.getElementById("newFilterBar");
+const newFilterSelect = document.getElementById("newFilterSelect");
+const newFilterCount  = document.getElementById("newFilterCount");
+const newFilterInfo   = document.getElementById("newFilterInfo");
 
 let storedDmSum = [], storedProgSum = [], storedDmDet = [];
+const IMPACT_ORDER = { reject: 0, high: 1, medium: 2, low: 3 };
+let dmCurrentSort = { col: "impact", dir: "asc" }; // default: Impact Reject→High→Medium→Low (asc = 0→3 in IMPACT_ORDER)
 let rawP21Data = null; // Store raw parsed P21 data for re-filtering
+let displayDmDet = []; // DM detail rows currently shown on screen (respects the New Issues Only toggle)
 let excludedMessages = new Set(); // Messages already applied (in current report)
 let pendingExclusions = new Set(); // Messages staged but not yet applied
 let lastDmSumFull = []; // Full DM summary for # lookup
 let currentStudyId = null; // STUDYID extracted from P21 report
+let dataFitnessScore = null; // Data Fitness Score pulled from the P21 "Overview" sheet
+let prevReportData = null; // { signatures: Set, count: number, studyId: string|null } from previously-uploaded P21 report
 
 const exclusionInput = document.getElementById("exclusionInput");
 const exclusionBtn   = document.getElementById("exclusionBtn");
@@ -970,6 +1072,21 @@ dsUploadZone.addEventListener("drop", e => {
 dsFileInput.addEventListener("change", e => { if (e.target.files[0]) processDSFile(e.target.files[0]); });
 dsRemoveBtn.addEventListener("click", removeDSDataset);
 
+// ── Previous Report Upload Event Listeners ─────────────────────────────
+prevUploadZone.addEventListener("click", () => prevFileInput.click());
+prevUploadZone.addEventListener("dragover", e => { e.preventDefault(); prevUploadZone.classList.add("drag-over"); });
+prevUploadZone.addEventListener("dragleave", () => prevUploadZone.classList.remove("drag-over"));
+prevUploadZone.addEventListener("drop", e => {
+  e.preventDefault(); prevUploadZone.classList.remove("drag-over");
+  if (e.dataTransfer.files[0]) processPrevFile(e.dataTransfer.files[0]);
+});
+prevFileInput.addEventListener("change", e => { if (e.target.files[0]) processPrevFile(e.target.files[0]); });
+prevRemoveBtn.addEventListener("click", removePrevReport);
+newFilterSelect.addEventListener("change", () => {
+  updateNewFilterInfo();
+  if (rawP21Data) classifyData(rawP21Data);
+});
+
 // ── P21 Upload Event Listeners ────────────────────────────────────────
 uploadZone.addEventListener("click", () => fileInput.click());
 uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
@@ -981,6 +1098,7 @@ uploadZone.addEventListener("drop", e => {
 fileInput.addEventListener("change", e => { if (e.target.files[0]) processFile(e.target.files[0]); });
 downloadBtn.addEventListener("click", downloadExcel);
 resetBtn.addEventListener("click", resetUI);
+setupDmSortHandlers();
 
 // ── Filter Change ─────────────────────────────────────────────────────
 filterSelect.addEventListener("change", () => {
@@ -1239,6 +1357,97 @@ function updateFilterInfo() {
   }
 }
 
+// ── Previous Report (New Issue Detection) ──────────────────────────────
+function buildIssueSignature(usubjid, ds, msg, ruleId, keyValues) {
+  return [usubjid || "", ds || "", msg || "", ruleId || "", keyValues || ""].join("|||");
+}
+
+function extractIssueSignatures(rows) {
+  let headerIdx = -1, colMap = {};
+  for (let i = 0; i < rows.length; i++) {
+    const lower = rows[i].map(c => String(c||"").toLowerCase().trim());
+    if (lower.includes("message") && lower.includes("dataset")) {
+      headerIdx = i;
+      lower.forEach((h,j) => { colMap[h] = j; });
+      break;
+    }
+  }
+  if (headerIdx < 0) throw new Error("Could not find header row with 'Message' and 'Dataset' columns. Make sure you upload a P21 validation report with an 'Issue Details' sheet.");
+
+  const mi = colMap["message"], di = colMap["dataset"], ri = colMap["rule id"], vi = colMap["variables"], ai = colMap["values"];
+  const signatures = new Set();
+  let count = 0;
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.every(c => !c && c !== 0)) continue;
+    const msg = String(row[mi]||"").trim();
+    if (!msg) continue;
+    const ds = String(row[di]||"").trim();
+    const ruleId = ri !== undefined ? String(row[ri]||"").trim() : "";
+    const vars = vi !== undefined ? String(row[vi]||"") : "";
+    const vals = ai !== undefined ? String(row[ai]||"") : "";
+    const usubjid = extractUSUBJID(vars, vals);
+    const keyValues = extractKeyValues(vars, vals);
+    signatures.add(buildIssueSignature(usubjid, ds, msg, ruleId, keyValues));
+    count++;
+  }
+  const studyId = extractSTUDYID(rows, headerIdx, colMap);
+  return { signatures, count, studyId };
+}
+
+function processPrevFile(file) {
+  spinnerMsg.textContent = "Reading previous report…";
+  spinnerEl.classList.remove("hidden");
+  errorBox.classList.add("hidden");
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      let sn = wb.SheetNames.find(n => n.toLowerCase().includes("issue detail"));
+      if (!sn) sn = wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" });
+      prevReportData = extractIssueSignatures(rows);
+
+      spinnerEl.classList.add("hidden");
+      prevUploadZone.classList.add("hidden");
+      prevStatusWrap.classList.remove("hidden");
+      prevStatusText.textContent = `${file.name} — ${prevReportData.count.toLocaleString()} issues on file`;
+
+      if (!resultsEl.classList.contains("hidden")) {
+        newFilterBar.classList.remove("hidden");
+        updateNewFilterInfo();
+      }
+
+      if (rawP21Data) classifyData(rawP21Data);
+    } catch (err) {
+      spinnerEl.classList.add("hidden");
+      showError("Error processing previous report: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function removePrevReport() {
+  prevReportData = null;
+  prevFileInput.value = "";
+  prevStatusWrap.classList.add("hidden");
+  prevUploadZone.classList.remove("hidden");
+  newFilterBar.classList.add("hidden");
+  newFilterSelect.value = "all";
+
+  if (rawP21Data) classifyData(rawP21Data);
+}
+
+function updateNewFilterInfo() {
+  if (!prevReportData) { newFilterInfo.textContent = ""; newFilterCount.textContent = ""; return; }
+  if (newFilterSelect.value === "new") {
+    newFilterInfo.textContent = "Showing only issues not present in the previous report — ready to hand off without repeats.";
+  } else {
+    newFilterInfo.textContent = "Showing all issues. Rows new since the previous report are flagged in the export.";
+  }
+}
+
 // ── Main Processing ───────────────────────────────────────────────────
 function processFile(file) {
   uploadLabel.textContent = file.name;
@@ -1250,23 +1459,39 @@ function processFile(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      let data;
-      if (file.name.match(/\.csv$|\.tsv$/i)) {
-        data = parseCSV(e.target.result);
-      } else {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
-        let sn = wb.SheetNames.find(n => n.toLowerCase().includes("issue detail"));
-        if (!sn) sn = wb.SheetNames[0];
-        data = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" });
-      }
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      dataFitnessScore = extractFitnessScore(wb);
+      let sn = wb.SheetNames.find(n => n.toLowerCase().includes("issue detail"));
+      if (!sn) sn = wb.SheetNames[0];
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" });
       rawP21Data = data;
       classifyData(data);
     } catch (err) {
       showError(err.message);
     }
   };
-  if (file.name.match(/\.csv$|\.tsv$/i)) reader.readAsText(file);
-  else reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(file);
+}
+
+function extractFitnessScore(wb) {
+  const sn = wb.SheetNames.find(n => n.toLowerCase().trim() === "overview");
+  if (!sn) return null;
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" });
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.length; j++) {
+      const cell = String(row[j] || "").trim().toLowerCase();
+      if (cell === "data fitness score") {
+        for (let k = i + 1; k < Math.min(i + 6, rows.length); k++) {
+          const val = rows[k] ? rows[k][j] : undefined;
+          if (val !== undefined && val !== "" && !isNaN(parseFloat(val))) {
+            return Math.round(parseFloat(val));
+          }
+        }
+      }
+    }
+  }
+  return null;
 }
 
 function parseCSV(text) {
@@ -1321,8 +1546,14 @@ function classifyData(rows) {
   const filterVal = filterSelect.value;
   const filterSubjects = getFilteredUSUBJIDs(filterVal);
 
-  const dmMap = {}, progMap = {}, dmDet = [];
-  let total = 0, filteredOut = 0;
+  // New-issue filter (only meaningful when a previous report has been loaded).
+  // NOTE: this only controls what's shown on screen — the export always includes
+  // every issue, with a "New Issue" column so DM can filter it themselves.
+  const newOnly = !!(prevReportData && newFilterSelect.value === "new");
+
+  // Pass 1: build one record per issue row (subject filter applied, new-issue filter NOT applied)
+  const allRecords = [];
+  let filteredOut = 0, newCount = 0, existingCount = 0;
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i];
@@ -1338,6 +1569,7 @@ function classifyData(rows) {
     const vals = ai !== undefined ? String(row[ai]||"") : "";
 
     const usubjid = extractUSUBJID(vars, vals);
+    const keyValues = extractKeyValues(vars, vals);
 
     // Apply subject filter
     if (filterSubjects) {
@@ -1348,22 +1580,91 @@ function classifyData(rows) {
       }
     }
 
-    total++;
+    // Determine new-vs-previously-seen status against the prior report
+    const isNew = prevReportData ? !prevReportData.signatures.has(buildIssueSignature(usubjid, ds, msg, ruleId, keyValues)) : null;
+    if (isNew === true) newCount++;
+    else if (isNew === false) existingCount++;
+
     const { cat, rat } = classify(msg, ds);
-    const key = msg + "|||" + imp + "|||" + tp;
 
     // Issues without a USUBJID (dataset-level) always go to Non-DM.
     // Messages excluded by the user (by message+dataset) also go to Non-DM.
     const exclusionKey = msg + "|||" + ds;
     const effectiveCat = (excludedMessages.has(exclusionKey) || !usubjid) ? "PROG" : cat;
 
-    if (effectiveCat === "DM") {
-      if (!dmMap[key]) dmMap[key] = { message: msg, impact: imp, type: tp, rationale: rat, count: 0, dsSet: new Set(), dsCounts: {} };
-      dmMap[key].count++; if (ds) { dmMap[key].dsSet.add(ds); dmMap[key].dsCounts[ds] = (dmMap[key].dsCounts[ds] || 0) + 1; }
-      dmDet.push({ usubjid: usubjid || "", dataset: ds, ruleId, message: msg, impact: imp, type: tp, keyValues: extractKeyValues(vars, vals) });
+    allRecords.push({ usubjid: usubjid || "", dataset: ds, impact: imp, type: tp, ruleId, keyValues, message: msg, rationale: rat, effectiveCat, isNew });
+  }
+
+  // Full aggregation — always ALL issues, this is what gets exported
+  const fullAgg = aggregateRecords(allRecords);
+  storedDmSum = fullAgg.dmSum; storedProgSum = fullAgg.progSum; storedDmDet = fullAgg.dmDet;
+
+  // Display aggregation — respects the "New Issues Only" view toggle (screen only)
+  const displayRecords = newOnly ? allRecords.filter(r => r.isNew !== false) : allRecords;
+  const dispAgg = newOnly ? aggregateRecords(displayRecords) : fullAgg;
+  const total = displayRecords.length;
+
+  dmCurrentSort = { col: "impact", dir: "asc" };
+  const dmSumSorted = sortDmData(dispAgg.dmSumExpanded);
+  lastDmSumFull = dmSumSorted;
+  displayDmDet = dispAgg.dmDet; // used by the accordion detail expansion so it matches what's summarized on screen
+  renderDmTable("dmTable", dmSumSorted);
+  updateDmSortHeaders();
+
+  document.getElementById("dmCount").textContent = dispAgg.dmTotal.toLocaleString();
+  document.getElementById("dmTypes").textContent = dispAgg.dmSum.length + " unique types";
+  document.getElementById("progCount").textContent = dispAgg.progTotal.toLocaleString();
+  document.getElementById("progTypes").textContent = dispAgg.progSum.length + " unique types";
+  document.getElementById("totalCount").textContent = total.toLocaleString();
+  document.getElementById("detailCount").textContent = dispAgg.dmDet.length.toLocaleString() + " subject-level DM rows";
+
+  const fitnessEl = document.getElementById("fitnessScore");
+  const fitnessSubEl = document.getElementById("fitnessSub");
+  if (dataFitnessScore !== null) {
+    fitnessEl.textContent = dataFitnessScore;
+    fitnessSubEl.textContent = "From P21 Overview";
+  } else {
+    fitnessEl.textContent = "N/A";
+    fitnessSubEl.textContent = "No Overview sheet found";
+  }
+
+  renderTable("progTable", dispAgg.progSum.slice(0, 10), "prog");
+  renderExclusionTags();
+
+  // Show/hide filter bar
+  if (dsData) {
+    filterBar.classList.remove("hidden");
+    updateFilterInfo();
+  } else {
+    filterBar.classList.add("hidden");
+  }
+
+  // Show/hide new-issue filter bar
+  if (prevReportData) {
+    newFilterBar.classList.remove("hidden");
+    updateNewFilterInfo();
+    newFilterCount.textContent = newOnly
+      ? `${newCount.toLocaleString()} new issue${newCount !== 1 ? "s" : ""} shown on screen (export always includes all ${allRecords.length.toLocaleString()})`
+      : `${newCount.toLocaleString()} new / ${existingCount.toLocaleString()} existing`;
+  } else {
+    newFilterBar.classList.add("hidden");
+  }
+
+  spinnerEl.classList.add("hidden");
+  resultsEl.classList.remove("hidden");
+}
+
+function aggregateRecords(records) {
+  const dmMap = {}, progMap = {}, dmDet = [];
+  for (const r of records) {
+    const key = r.message + "|||" + r.impact + "|||" + r.type;
+    if (r.effectiveCat === "DM") {
+      if (!dmMap[key]) dmMap[key] = { message: r.message, impact: r.impact, type: r.type, rationale: r.rationale, count: 0, dsSet: new Set(), dsCounts: {} };
+      dmMap[key].count++; if (r.dataset) { dmMap[key].dsSet.add(r.dataset); dmMap[key].dsCounts[r.dataset] = (dmMap[key].dsCounts[r.dataset] || 0) + 1; }
+      dmDet.push({ usubjid: r.usubjid, dataset: r.dataset, ruleId: r.ruleId, message: r.message, impact: r.impact, type: r.type, keyValues: r.keyValues, isNew: r.isNew });
     } else {
-      if (!progMap[key]) progMap[key] = { message: msg, impact: imp, type: tp, rationale: rat, count: 0, dsSet: new Set() };
-      progMap[key].count++; if (ds) progMap[key].dsSet.add(ds);
+      if (!progMap[key]) progMap[key] = { message: r.message, impact: r.impact, type: r.type, rationale: r.rationale, count: 0, dsSet: new Set() };
+      progMap[key].count++; if (r.dataset) progMap[key].dsSet.add(r.dataset);
     }
   }
 
@@ -1384,33 +1685,67 @@ function classifyData(rows) {
     }
   }
 
-  storedDmSum = dmSum; storedProgSum = progSum; storedDmDet = dmDet;
-  lastDmSumFull = dmSumExpanded; // For # lookup in exclusion input
-
   const dmTotal = dmSum.reduce((s,r) => s + r.count, 0);
   const progTotal = progSum.reduce((s,r) => s + r.count, 0);
 
-  document.getElementById("dmCount").textContent = dmTotal.toLocaleString();
-  document.getElementById("dmTypes").textContent = dmSum.length + " unique types";
-  document.getElementById("progCount").textContent = progTotal.toLocaleString();
-  document.getElementById("progTypes").textContent = progSum.length + " unique types";
-  document.getElementById("totalCount").textContent = total.toLocaleString();
-  document.getElementById("detailCount").textContent = dmDet.length.toLocaleString() + " subject-level DM rows";
+  return { dmSum, progSum, dmDet, dmSumExpanded, dmTotal, progTotal };
+}
 
-  renderDmTable("dmTable", dmSumExpanded);
-  renderTable("progTable", progSum.slice(0, 10), "prog");
-  renderExclusionTags();
+function sortDmData(data) {
+  const { col, dir } = dmCurrentSort;
+  return [...data].sort((a, b) => {
+    let av, bv;
+    if (col === "impact") {
+      av = IMPACT_ORDER[a.impact?.toLowerCase()] ?? 99;
+      bv = IMPACT_ORDER[b.impact?.toLowerCase()] ?? 99;
+    } else if (col === "count") {
+      av = a.count; bv = b.count;
+    } else if (col === "dataset") {
+      av = (a.dataset || "").toLowerCase();
+      bv = (b.dataset || "").toLowerCase();
+      return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    }
+    return dir === "asc" ? av - bv : bv - av;
+  });
+}
 
-  // Show/hide filter bar
-  if (dsData) {
-    filterBar.classList.remove("hidden");
-    updateFilterInfo();
+function updateDmSortHeaders() {
+  ["dmSortImpact", "dmSortDataset", "dmSortCount"].forEach(id => {
+    const th = document.getElementById(id);
+    if (!th) return;
+    th.classList.remove("sort-asc", "sort-desc");
+  });
+  const colMap = { impact: "dmSortImpact", dataset: "dmSortDataset", count: "dmSortCount" };
+  const th = document.getElementById(colMap[dmCurrentSort.col]);
+  if (!th) return;
+  // For Impact: asc in data = Reject→Low visually = descending importance → show ▼
+  // For Impact: desc in data = Low→Reject visually = ascending importance → show ▲
+  // For Count/Dataset: asc = ▲, desc = ▼ (normal)
+  if (dmCurrentSort.col === "impact") {
+    th.classList.add(dmCurrentSort.dir === "asc" ? "sort-desc" : "sort-asc");
   } else {
-    filterBar.classList.add("hidden");
+    th.classList.add(dmCurrentSort.dir === "asc" ? "sort-asc" : "sort-desc");
   }
+}
 
-  spinnerEl.classList.add("hidden");
-  resultsEl.classList.remove("hidden");
+function setupDmSortHandlers() {
+  [["dmSortImpact","impact"],["dmSortDataset","dataset"],["dmSortCount","count"]].forEach(([id, col]) => {
+    const th = document.getElementById(id);
+    if (!th) return;
+    th.addEventListener("click", () => {
+      if (dmCurrentSort.col === col) {
+        dmCurrentSort.dir = dmCurrentSort.dir === "asc" ? "desc" : "asc";
+      } else {
+        dmCurrentSort.col = col;
+        // Default sort direction per column
+        dmCurrentSort.dir = (col === "impact") ? "asc" : (col === "count" ? "desc" : "asc");
+      }
+      const sorted = sortDmData(lastDmSumFull);
+      lastDmSumFull = sorted;
+      renderDmTable("dmTable", sorted);
+      updateDmSortHeaders();
+    });
+  });
 }
 
 function renderDmTable(id, data) {
@@ -1418,11 +1753,69 @@ function renderDmTable(id, data) {
   tbody.innerHTML = "";
   for (let i = 0; i < data.length; i++) {
     const r = data[i];
-    const tr = document.createElement("tr");
     const isReject = r.impact && r.impact.toLowerCase() === "reject";
+    const rowDataset = (r.dataset || r.datasets || "").trim();
+
+    // Summary row
+    const tr = document.createElement("tr");
     tr.className = "dm-row" + (isReject ? " reject-row" : "");
-    tr.innerHTML = `<td class="row-num">${i + 1}</td><td class="msg">${esc(r.message)}</td><td class="ds">${esc(r.dataset || r.datasets || "")}</td><td class="cnt dm-cnt">${r.count.toLocaleString()}</td><td class="imp">${esc(r.impact)}</td><td class="rat">${esc(r.rationale)}</td>`;
+    tr.style.cursor = "pointer";
+    const expandId = `dm-expand-${i}`;
+    tr.innerHTML = `
+      <td class="row-num">${i + 1}</td>
+      <td class="msg">${esc(r.message)}</td>
+      <td class="ds">${esc(rowDataset)}</td>
+      <td class="cnt dm-cnt">${r.count.toLocaleString()}</td>
+      <td class="imp">${esc(r.impact)}</td>
+      <td class="rat">${esc(r.rationale)}</td>
+      <td class="expand-toggle" style="text-align:center; width:32px; color:#f59e0b; font-size:13px;">▼</td>`;
     tbody.appendChild(tr);
+
+    // Detail expand row (hidden by default)
+    const detailTr = document.createElement("tr");
+    detailTr.id = expandId;
+    detailTr.className = "dm-detail-row" + (isReject ? " reject-row" : "");
+    detailTr.style.display = "none";
+
+    // Match detail records by message + dataset
+    const details = displayDmDet.filter(d =>
+      d.message === r.message &&
+      (d.dataset || "").trim() === rowDataset
+    );
+
+    const detailTd = document.createElement("td");
+    detailTd.colSpan = 7;
+    detailTd.style.cssText = "padding: 0 0 8px 40px;";
+
+    if (details.length === 0) {
+      detailTd.innerHTML = `<span style="color:#7a8ba3; font-size:12px; font-style:italic;">No subject-level detail records found.</span>`;
+    } else {
+      const rows = details.map(d => `
+        <tr>
+          <td style="padding:6px 12px; color:#e2e8f0; font-size:12px; font-family:'JetBrains Mono',monospace; white-space:nowrap;">${esc(d.usubjid || "N/A")}</td>
+          <td style="padding:6px 12px; color:#7a8ba3; font-size:12px;">${esc(d.keyValues || "")}</td>
+        </tr>`).join("");
+      detailTd.innerHTML = `
+        <table style="border-collapse:collapse; width:100%; max-height:220px; display:block; overflow-y:auto;">
+          <thead>
+            <tr style="background:#111c30;">
+              <th style="padding:6px 12px; text-align:left; color:#94a3b8; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.7px; white-space:nowrap;">USUBJID</th>
+              <th style="padding:6px 12px; text-align:left; color:#94a3b8; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.7px;">KEY VALUES</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    detailTr.appendChild(detailTd);
+    tbody.appendChild(detailTr);
+
+    // Toggle expand on click
+    tr.addEventListener("click", () => {
+      const isOpen = detailTr.style.display !== "none";
+      detailTr.style.display = isOpen ? "none" : "table-row";
+      tr.querySelector(".expand-toggle").textContent = isOpen ? "▼" : "▲";
+    });
   }
 }
 
@@ -1439,7 +1832,7 @@ function renderTable(id, data, type) {
 }
 
 function downloadExcel() {
-  const xml = buildExcelXML(storedDmSum, storedProgSum, storedDmDet);
+  const xml = buildExcelXML(storedDmSum, storedProgSum, storedDmDet, !!prevReportData);
   const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1462,9 +1855,14 @@ function resetUI() {
   spinnerEl.classList.add("hidden");
   filterBar.classList.add("hidden");
   filterSelect.value = "all";
-  storedDmSum = []; storedProgSum = []; storedDmDet = [];
+  newFilterSelect.value = "all";
+  newFilterBar.classList.add("hidden");
+  storedDmSum = []; storedProgSum = []; storedDmDet = []; displayDmDet = [];
   rawP21Data = null;
   currentStudyId = null;
+  dataFitnessScore = null;
+  document.getElementById("fitnessScore").textContent = "—";
+  document.getElementById("fitnessSub").textContent = "From P21 Overview";
   excludedMessages.clear();
   pendingExclusions.clear();
   lastDmSumFull = [];
